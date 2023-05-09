@@ -1,30 +1,51 @@
-JWT Token Authentication Sample Application
+# JWT Authentication in ASP.NET Core API
 
-This is a sample ASP.NET Core application that demonstrates how to implement JWT (JSON Web Token) token authentication. The application provides an API for generating and validating JWT tokens, and also includes an example controller that requires authentication and authorization using JWT tokens.
+## Introduction
+JWT (JSON Web Token) authentication is a method of securing APIs by using tokens encoded as JSON objects. This guide explains how to implement JWT authentication in your ASP.NET Core API.
 
---------
+## Prerequisites
+- ASP.NET Core project set up
+- Basic understanding of ASP.NET Core and JWT authentication
 
-The application provides the following API endpoints:
+## Getting Started
 
-POST /Authentication: This endpoint is used to authenticate a user and generate a JWT token. It expects a JSON payload containing the UserName and Password properties. If the authentication is successful, it returns an Ok response with the generated token. If the authentication fails, it returns a BadRequest response with an error message.
+### Step 1: Install the Required NuGet Packages
+To enable JWT authentication in your ASP.NET Core project, you need to install the following NuGet package:
 
-GET /WeatherForecast: This endpoint is an example protected route that requires authentication. It returns a list of weather forecasts. Only users with the roles "User" or "Admin" can access this endpoint. The token should be included in the request headers using the Authorization header with the value Bearer <token>.
+### Step 2: Configure JWT Authentication in the Startup Class
+Open the `Startup.cs` file in your project and make the following modifications:
 
-GET /WeatherForecast/admin: This endpoint is another example protected route that requires authentication and the "Admin" role. Only users with the "Admin" role can access this endpoint. It returns a simple message indicating that the method is only accessible by admins.
+Add the necessary namespaces at the top of the file:
 
-----------
+```csharp
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
+```
+In the ConfigureServices method, add the following code to configure JWT authentication:
 
-The application defines two authorization policies:
+```csharp
+var appSettingsSection = Configuration.GetSection("AppSettings");
+services.Configure<AppSettings>(appSettingsSection);
 
-UserAndAdmin: This policy requires the user to have either the "User" or "Admin" role.
+var appSettings = appSettingsSection.Get<AppSettings>();
+var key = Encoding.ASCII.GetBytes(appSettings.Key);
 
-AdminOnly: This policy requires the user to have the "Admin" role.
+services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.SaveToken = true;
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey = new SymmetricSecurityKey(key),
+        ValidateIssuer = false,
+        ValidateAudience = false
+    };
+});
 
-These policies are used to restrict access to the protected endpoints in the WeatherForecastController.
-
-------------
-The AuthenticateService class is responsible for authenticating user credentials and generating JWT tokens.
-
-The Startup.cs file contains the configuration for JWT authentication and authorization.
-
-The AppSettings.cs file defines the model for the AppSettings configuration, including the JWT key.
+```
+In the Configure method, add the following code to enable authentication:
